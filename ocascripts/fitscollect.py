@@ -180,7 +180,7 @@ examples:
     log.debug(f'  Filter: {args.filter}')
 
     glob_pattern = (f'{args.telescope}/processed-ofp/targets/{args.object}/{args.filter}'
-                    f'/light-curve/{args.telescope}_????_?????.json'
+                    f'/light-curve/{args.telescope}._????_?????.json'
                     )
     log.debug(f'Glob pattern: {glob_pattern}')
     for path in root_path.glob(glob_pattern):

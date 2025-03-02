@@ -33,8 +33,10 @@ def ensure_oca_julian(dt: Optional[str]) -> int:
             raise ValueError(f'Invalid date: {dt}')
     return int(dt)
 
+RET_T = Tuple[Optional[str], Optional[str], Optional[str]]
+RET_NULL = (None, None, None)
 
-def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple[int, int]) -> None:
+def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple[int, int]) -> RET_T:
     basename = path.stem
     try:
         # extract oca julian day string and telescope from path:
@@ -42,14 +44,14 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
         m = re.match(r'(?P<telescope>\w{4})(?P<instr>.)_(?P<night>\d{4})_(?P<count>\d{5}).json', path.name)
         night = m.group('night')
         telescope = m.group('telescope')
-        # instr = m.group('instr')
+        instr = m.group('instr')
         # count = m.group('count')
     except Exception as e:
         log.error(f'Invalid filename: {path}, can not extract night: {e}')
-        return
+        return RET_NULL
 
     if int(night) < date_range[0] or int(night) > date_range[1]:
-        return
+        return RET_NULL
 
     if args.raw:
         fits_path = root_path / telescope / 'raw' / night / f'{basename}.fits'
@@ -57,11 +59,12 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
         fits_path = root_path / telescope / 'processed-ofp' / 'science' / night / basename / f'{basename}_zdf.fits'
     if args.check and not fits_path.exists():
         log.warning(f'File {fits_path} does not exist')
-        return
+        return RET_NULL
     if args.name:
         print(fits_path.name)
     else:
         print(fits_path)
+    return telescope, night, instr
 
 
 
@@ -90,8 +93,9 @@ def main() -> int:
     argparser.epilog = """
 examples:
 
-    Display names of calibrated FITS of target 'ngc300-center' in Ic:
-        fitscollect -o ngc300-center -f Ic -n
+    Display names of calibrated FITS of target 'ngc300-center' in Ic 
+    with incrised verbosity (e.g. filters, telescopes and counts is reported):
+        fitscollect -o ngc300-center -f Ic -n -v
         
     Copy all raw FITS files of target 'ngc300-center' to /tmp/myfits:
         fitscollect -o ngc300-center -raw | xargs  -I {} cp {} /tmp/myfits
@@ -183,13 +187,29 @@ examples:
                     f'/light-curve/{args.telescope}?_????_?????.json'
                     )
     log.debug(f'Glob pattern: {glob_pattern}')
+    count = 0
+    telescopes = set()
+    nigts = set()
+    instrs = set()
+    filters = set()
     for path in root_path.glob(glob_pattern):
-        process_path(
+        telescope, night, instr = process_path(
             root_path=root_path,
             path=path,
             args=args,
             date_range=(start_date, end_date)
         )
+        flt = path.parts[-3]
+        if (telescope, night, instr) == RET_NULL:
+            continue
+        count += 1
+        telescopes.add(telescope)
+        nigts.add(night)
+        instrs.add(instr)
+        filters.add(flt)
+        log.info(f'Files found: {count} taken in {len(nigts)} nights')
+        log.info(f'Involved telescopes: {telescopes}, instruments: {instrs}, filters: {filters}')
+
 
     return 0
 

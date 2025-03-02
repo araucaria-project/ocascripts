@@ -207,8 +207,8 @@ examples:
         nigts.add(night)
         instrs.add(instr)
         filters.add(flt)
-        log.info(f'Files found: {count} taken in {len(nigts)} nights')
-        log.info(f'Involved telescopes: {telescopes}, instruments: {instrs}, filters: {filters}')
+    log.info(f'Files found: {count} taken in {len(nigts)} nights')
+    log.info(f'Involved telescopes: {telescopes}, instruments: {instrs}, filters: {filters}')
 
 
     return 0

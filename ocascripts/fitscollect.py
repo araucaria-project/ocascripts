@@ -52,9 +52,9 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
         return
 
     if args.raw:
-        fits_path = root_path / telescope / 'processed-ofp' / 'science' / night / basename / f'{basename}_zdf.fits'
-    else:
         fits_path = root_path / telescope / 'raw' / night / f'{basename}.fits'
+    else:
+        fits_path = root_path / telescope / 'processed-ofp' / 'science' / night / basename / f'{basename}_zdf.fits'
     if args.check and not fits_path.exists():
         log.warning(f'File {fits_path} does not exist')
         return
@@ -83,7 +83,7 @@ def main() -> int:
     argparser.add_argument('-r', '--raw', help='RAW files instead of calibrated ZDFs', action='store_true')
     argparser.add_argument('-n', '--name', help='Print filenames only instead of abs paths', action='store_true')
     argparser.add_argument('-c', '--check', help='Output file after checking if it exists', action='store_true')
-    # argparser.add_argument('-C', '--count', help='Print count of files only', action='store_true')
+    # argparser.add_argument('-C', '--count', help='Print count of files only', action='store_true')  # TBD
     argparser.add_argument('-D', '--dir', help='Root FITS dir, default: autodetect', default=None)
     argparser.add_argument('-v', '--verbose', action='count', default=0)
     # examples
@@ -156,20 +156,29 @@ examples:
         except Exception as e:
             log.error(f'Invalid date argument: {args.date} {e}')
             return -1
-        if start_date > end_date:
-            log.warning(f'Empty date range: {start_date} > {end_date}')
-            return 0 # formally it's not forbidden, but still nothing to do
         if start_date < 0:
             log.warning(f'Date value, before modern OCA era: start={start_date}')
             start_date = 0
+        if end_date < 0:
+            log.warning(f'Date value, before modern OCA era: end={end_date}')
+            end_date = 0
         if start_date > 9999:
             log.warning(f'Date value later than 2050-07-11 not fully supported, start={start_date}')
             start_date = 9999
         if end_date > 9999:
             log.warning(f'Date value later than 2050-07-11 not fully supported, end={end_date}')
             end_date = 9999
+        if start_date > end_date:
+            log.warning(f'Empty date range: {start_date} > {end_date}')
+            return 0 # formally it's not forbidden, but still nothing to do
 
-    targets_path = root_path / 'targets'
+    log.debug(f'Filtering:')
+    log.debug(f'  Start date: {start_date}')
+    log.debug(f'  End date: {end_date}')
+    log.debug(f'  Telescope: {args.telescope}')
+    log.debug(f'  Target: {args.object}')
+    log.debug(f'  Filter: {args.filter}')
+
     glob_pattern = (f'{args.telescope}/processed-ofp/targets/{args.object}/{args.filter}'
                     f'/light-curve/{args.telescope}_????_?????.json'
                     )

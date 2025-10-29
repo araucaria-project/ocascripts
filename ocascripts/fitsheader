@@ -39,8 +39,9 @@ def read_fits_header(data: str) -> List:
     for n in range(1, 500):
         dp = data[80 * (n - 1):(80 * n)]
         li.append(dp)
-        if dp.find('END') > -1:
-            return li
+        if not 'EXTEND' in dp:
+            if dp.find('END') > -1:
+                return li
     return li
 
 

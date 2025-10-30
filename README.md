@@ -1,5 +1,16 @@
 # Various scripts useful in OCA Observatory
 
+Feel free to add yours, minimal dependencies, scripts here.
+
+Add them to pyproject.toml as console_scripts entry points.
+
+On the server, after `poetry install`, they will be available virtuals environment `bin` directory.
+
+Symlink them to `/usr/local/bin` or similar location in PATH for easy access, e.g.:
+```bash
+sudo ln -s /home/poweruser/src/ocascripts/.venv/bin/fitscollect /usr/local/bin/fitscollect
+```
+
 ## Scripts
 
 ### fitscollect

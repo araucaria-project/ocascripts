@@ -134,3 +134,6 @@ dmypy.json
 
 /docker/nats/nats-log/
 /docker/nats/nats-store/
+
+# Poetry
+poetry.lock

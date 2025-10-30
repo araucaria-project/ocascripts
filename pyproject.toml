@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ocascripts"
-version = "0.1.3"
+version = "0.2.0"
 description = ""
 authors = ["MMME team"]
 readme = "README.md"
@@ -11,6 +11,8 @@ python = "^3.9"
 
 [tool.poetry.scripts]
 fitscollect = "ocascripts.fitscollect:main"
+fitsheader = "ocascripts.fitheader:main"
+fitslist = "ocascripts.fitslist:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -93,7 +93,7 @@ def get_fits_list(path: str) -> List:
     return li
 
 
-if __name__ == '__main__':
+def main():
     path = os.getcwd()
     fd = {}
     s = ' '
@@ -210,3 +210,6 @@ if __name__ == '__main__':
                     print(f'{s * w}{m:45} UNKNOWN FITS HEADER FORMAT')
     else:
         print("NO FITS FILES")
+
+if __name__ == "__main__":
+    main()

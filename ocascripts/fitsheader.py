@@ -104,8 +104,7 @@ def print_line(n, m):
     else:
         print(f'{n}')
 
-
-if __name__ == '__main__':
+def main():
     ar = sys.argv
     path = os.getcwd()
     if len(ar) > 1:
@@ -115,3 +114,6 @@ if __name__ == '__main__':
             d = get_dict_header(h)
             for p, q in d.items():
                 print_line(p, q)
+
+if __name__ == '__main__':
+    main()

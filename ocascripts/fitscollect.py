@@ -1,7 +1,12 @@
 """Collects OCA FITS files according to specified criteria.
 Returns a list of FITS files paths
 
-Only files known to OFP are considered.
+This script works fast because it iterates over processed files directories instead of
+filtering individual files, thus only files known to OFP are considered, namely only files
+having corresponding JSON counterpart are considered.:
+   {telescope}/processed-ofp/targets/{object}/{filter}/light-curve/{telescope}?_????_?????.json
+
+v. 0.1.3
 """
 import argparse
 import logging
@@ -76,7 +81,7 @@ def main() -> int:
     # command line arguments
     argparser = ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    argparser.add_argument('-o', '--object', help='Object name or alias', metavar='TARGET', default='*')
+    argparser.add_argument('-o', '--object', help='Object name spelled identical to objet\'s field directory name', metavar='TARGET', default='*')
     argparser.add_argument('-t', '--telescope', help='Telescope name', default='*')
     argparser.add_argument('-f', '--filter', help='Filter name', default='*')
     # date, may have one or two arguments - start and end or just specific date.
@@ -88,7 +93,7 @@ def main() -> int:
     argparser.add_argument('-c', '--check', help='Output file after checking if it exists', action='store_true')
     # argparser.add_argument('-C', '--count', help='Print count of files only', action='store_true')  # TBD
     argparser.add_argument('-D', '--dir', help='Root FITS dir, default: autodetect', default=None)
-    argparser.add_argument('-v', '--verbose', action='count', default=0)
+    argparser.add_argument('-v', '--verbose', help='-v gives some stats, -vv search pattern for debugging', action='count', default=0)
     # examples
     argparser.epilog = """
 examples:

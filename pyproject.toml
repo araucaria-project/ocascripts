@@ -11,7 +11,7 @@ python = "^3.9"
 
 [tool.poetry.scripts]
 fitscollect = "ocascripts.fitscollect:main"
-fitsheader = "ocascripts.fitheader:main"
+fitsheader = "ocascripts.fitsheader:main"
 fitslist = "ocascripts.fitslist:main"
 
 [build-system]

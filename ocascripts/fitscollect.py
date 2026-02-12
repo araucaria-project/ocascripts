@@ -100,8 +100,8 @@ def main() -> int:
     argparser.epilog = """
 examples:
 
-    Display names of calibrated FITS of target 'ngc300-center' in Ic 
-    with incrised verbosity (e.g. filters, telescopes and counts is reported):
+    Output names of calibrated FITS of target 'ngc300-center' in Ic 
+    with increased verbosity (e.g. filters, telescopes and counts is reported):
         fitscollect -o ngc300-center -f Ic -n -v
         
     Copy all raw FITS files of target 'ngc300-center' to /tmp/myfits:
@@ -134,7 +134,7 @@ examples:
 
     root_propositions = {
         'OCM': '/data/fits',
-        'CAMK': '/work/apus/oca/fits',
+        'CAMK': '/work/vela/oca/fits',
         'Mik':  '/Users/Shared/oca_data/fits'
     }
 

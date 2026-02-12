@@ -11,6 +11,8 @@ v. 0.1.3
 import argparse
 import logging
 import re
+import signal
+import sys
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from typing import Optional, Tuple
@@ -115,6 +117,13 @@ examples:
 
     args: Namespace = argparser.parse_args()
 
+    # Allow default SIGPIPE handling on Unix to avoid BrokenPipeError tracebacks.
+    try:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except (AttributeError, ValueError):
+        # SIGPIPE may be unsupported or disallowed in some environments.
+        pass
+
     log_format = '%(asctime)s [%(levelname)s] [%(name)s] %(message)s'
     if args.verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
@@ -215,13 +224,18 @@ examples:
     log.info(f'Files found: {count} taken in {len(nigts)} nights')
     log.info(f'Involved telescopes: {telescopes}, instruments: {instrs}, filters: {filters}')
 
-
     return 0
 
 
 
 
 if __name__ == "__main__":
-    ret_code = main()
-    exit(ret_code)
-
+    try:
+        ret_code = main()
+        exit(ret_code)
+    except BrokenPipeError:
+        # Exit quietly when the pipe is closed by the consumer.
+        try:
+            sys.stdout.close()
+        finally:
+            exit(0)

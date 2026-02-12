@@ -7,12 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+requests = "^2.32.5"
 
 
 [tool.poetry.scripts]
 fitscollect = "ocascripts.fitscollect:main"
-fitsheader = "ocascripts.fitheader:main"
+fitsheader = "ocascripts.fitsheader:main"
 fitslist = "ocascripts.fitslist:main"
+ocadb-downloader = "ocascripts.ocadb-downloader:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -61,3 +61,39 @@ examples:
 ```
 
 
+### ocadb-downloader
+Allows for listing, downloading and showing corresponding OCADB information per FITS file.
+
+```bash
+usage: ocadb-downloader [-h] [-u USERNAME] [-p PASSWORD] [-l] [-f FILENAME] [--chunksize CHUNKSIZE]
+
+Downloads fits files from OCADB, based on STDIN input.
+
+options:
+  -h, --help            show this help message and exit
+  -u, --username USERNAME
+                        OCADB Username
+  -p, --password PASSWORD
+                        OCADB Password
+  -l, --list            List all available observations
+  -f, --filename FILENAME
+                        Find FITS by filename
+  --chunksize CHUNKSIZE
+                        Chunk size for getting download links from OCADB. Default = 40
+
+Saves the downloaded files to the current folder, lists all available FITS files, finds and displays info using FITS filename.
+
+examples:
+    Download FITS files:
+        cat files_to_download.txt|ocadb-downloader -u username -p password
+    
+        fitscollect -o object|ocadb-downloader -u username -p password
+  
+  
+    List all FITS files available in OCADB:
+        ocadb-downloader -u username -p password -l
+    
+    Show OCADB information per given FITS filename:
+        ocadb-downloader -u username -p password -f filename.fits
+    
+```

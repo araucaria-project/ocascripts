@@ -201,7 +201,8 @@ def process_files(file_list: List[str], args: Namespace):
                 return False
             seen.add(dedup_key)
         indent = '' if args.no_indent else (' ' * level)
-        print(f'{indent}{path_str}')
+        out = Path(path_str).name if args.names else path_str
+        print(f'{indent}{out}')
         stats[kind] = stats.get(kind, 0) + 1
         return True
 
@@ -265,7 +266,8 @@ def main() -> int:
     output_group = argparser.add_argument_group('output options', 'Control output format')
     output_group.add_argument('-s', '--skip-source', help='Do not output original input files', action='store_true')
     output_group.add_argument('-d', '--skip-duplicates', help='Skip duplicate files (same path) in output', action='store_true')
-    output_group.add_argument('--no-indent', help='Do not indent output to show dependency structure', action='store_true')
+    output_group.add_argument('-n', '--names', help='Print filenames only, not full paths', action='store_true')
+    output_group.add_argument('-N', '--no-indent', help='Do not indent output to show dependency structure', action='store_true')
 
     # General
     general_group = argparser.add_argument_group('general options')

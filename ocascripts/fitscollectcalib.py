@@ -125,15 +125,20 @@ def find_calibration_files(level, basename: str, suffix: str, root_path: Path, a
             continue
         log.debug(f'Checking file: {f}, basename: {f_basename}, suffix: {f_suffix}')
         if f_suffix is None:  # raw files have no suffix
+            # Reconstruct canonical path: raw files live in /raw/{night}/, not in the
+            # processed dir where the symlink is. Avoids broken/misleading symlink paths.
+            night = f_basename[6:10]
+            telescope = f_basename[:4]
+            canonical = str(root_path / telescope / 'raw' / night / f'{f_basename}.fits')
             if suffix == 'master_z':
                 if args.raw_zero:
-                    calib_files.append((str(f), level + 1, 'raw_zero'))
+                    calib_files.append((canonical, level + 1, 'raw_zero', f_basename, None))
             elif suffix == 'master_d':
                 if args.raw_dark:
-                    calib_files.append((str(f), level + 1, 'raw_dark'))
+                    calib_files.append((canonical, level + 1, 'raw_dark', f_basename, None))
             elif suffix and suffix.startswith('master_f_'):
                 if args.raw_flat:
-                    calib_files.append((str(f), level + 1, 'raw_flat'))
+                    calib_files.append((canonical, level + 1, 'raw_flat', f_basename, None))
             elif suffix == 'zdf' and f_basename == basename:
                 pass  # expected: symlink to original raw science file in science dir, ignore
             else:
@@ -142,19 +147,22 @@ def find_calibration_files(level, basename: str, suffix: str, root_path: Path, a
             if f_suffix == 'master_z':
                 need_inside = args.raw_zero
                 if args.master_zero:
-                    calib_files.append((str(f), level + 1, 'master_zero'))
+                    canonical = str(find_processed_file_dir(f_basename, f_suffix, root_path) / f.name)
+                    calib_files.append((canonical, level + 1, 'master_zero', f_basename, f_suffix))
                 if need_inside:
                     calib_files += find_calibration_files(level + 1, f_basename, f_suffix, root_path, args)
             elif f_suffix == 'master_d':
                 need_inside = args.master_zero or args.raw_zero or args.raw_dark
                 if args.master_dark:
-                    calib_files.append((str(f), level + 1, 'master_dark'))
+                    canonical = str(find_processed_file_dir(f_basename, f_suffix, root_path) / f.name)
+                    calib_files.append((canonical, level + 1, 'master_dark', f_basename, f_suffix))
                 if need_inside:
                     calib_files += find_calibration_files(level + 1, f_basename, f_suffix, root_path, args)
             elif f_suffix.startswith('master_f_'):
                 need_inside = args.master_dark or args.master_zero or args.raw_zero or args.raw_dark or args.raw_flat
                 if args.master_flat:
-                    calib_files.append((str(f), level + 1, 'master_flat'))
+                    canonical = str(find_processed_file_dir(f_basename, f_suffix, root_path) / f.name)
+                    calib_files.append((canonical, level + 1, 'master_flat', f_basename, f_suffix))
                 if need_inside:
                     calib_files += find_calibration_files(level + 1, f_basename, f_suffix, root_path, args)
 
@@ -183,13 +191,15 @@ def process_files(file_list: List[str], args: Namespace):
     stats = {'source': 0, 'master_zero': 0, 'master_dark': 0, 'master_flat': 0,
              'raw_zero': 0, 'raw_dark': 0, 'raw_flat': 0, 'duplicates': 0}
 
-    def emit(path_str: str, level: int, kind: str):
+    def emit(path_str: str, level: int, kind: str, dedup_basename: str, dedup_suffix: Optional[str]):
         """Output a single file, respecting --skip-duplicates. Returns True if emitted."""
         if args.skip_duplicates:
-            if path_str in seen:
+            # basename+suffix uniquely identifies a file regardless of path/symlinks
+            dedup_key = f'{dedup_basename}_{dedup_suffix}' if dedup_suffix else dedup_basename
+            if dedup_key in seen:
                 stats['duplicates'] += 1
                 return False
-            seen.add(path_str)
+            seen.add(dedup_key)
         indent = '' if args.no_indent else (' ' * level)
         print(f'{indent}{path_str}')
         stats[kind] = stats.get(kind, 0) + 1
@@ -210,7 +220,7 @@ def process_files(file_list: List[str], args: Namespace):
 
         if not args.skip_source:
             _, suf = extract_basename(file_path)
-            emit(file_path, 0, suffix_to_kind(suf))
+            emit(file_path, 0, suffix_to_kind(suf), file_path, None)  # source: dedup by full path
         else:
             stats['source'] += 1  # count it but don't emit
 
@@ -220,8 +230,8 @@ def process_files(file_list: List[str], args: Namespace):
             continue
 
         calib_files = find_calibration_files(0, basename, suffix, root_path, args)
-        for calib_path, level, kind in calib_files:
-            emit(calib_path, level, kind)
+        for calib_path, level, kind, cb, cs in calib_files:
+            emit(calib_path, level, kind, cb, cs)
 
     total_out = sum(v for k, v in stats.items() if k != 'duplicates' and k != 'source')
     log.info(

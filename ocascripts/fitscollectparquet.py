@@ -77,13 +77,20 @@ def main() -> int:
 
     # Filtering
     filter_group = argparser.add_argument_group('filtering')
-    filter_group.add_argument('-o', '--object',    help='Object name (OBJECT column, glob-style)', default=None)
-    filter_group.add_argument('-t', '--telescope', help='Telescope name (e.g. zb08)', default=None)
-    filter_group.add_argument('-f', '--filter',    help='Filter name (FILTER column)', default=None)
-    filter_group.add_argument('-p', '--pi',        help='PI name', default=None)
-    filter_group.add_argument('-P', '--sciprog',   help='Science program (SCIPROG)', default=None)
-    filter_group.add_argument('-d', '--date',      nargs='+',
-                               help='DATE-OBS date range: one value (single night) or two (from-to), ISO format')
+    filter_group.add_argument('-o', '--object', action='append', metavar='OBJECT',
+                               help='Object name (OBJECT column, glob-style, repeatable: -o X -o Y means X OR Y)', default=None)
+    filter_group.add_argument('-t', '--telescope', action='append', metavar='TEL',
+                               help='Telescope name, repeatable', default=None)
+    filter_group.add_argument('-f', '--filter', action='append', metavar='FILTER',
+                               help='Filter name, repeatable', default=None)
+    filter_group.add_argument('-p', '--pi', action='append', metavar='PI',
+                               help='PI name (glob-style, repeatable)', default=None)
+    filter_group.add_argument('-P', '--sciprog', action='append', metavar='SCIPROG',
+                               help='Science program (glob-style, repeatable)', default=None)
+    filter_group.add_argument('-d', '--date', nargs='+',
+                               help='DATE-OBS date range: one value (single night) or two (from-to), ISO date format '
+                                    'YYYY-MM-DD. Time part is ignored - all observations from given UT date are included. '
+                                    'E.g. -d 2025-12-09 or -d 2025-12-01 2025-12-31')
     filter_group.add_argument('--imagetyp',        help='IMAGETYP value (default: science)', default='science')
     filter_group.add_argument('--min-exptime',     help='Minimum exposure time', type=float, default=None)
     filter_group.add_argument('--max-exptime',     help='Maximum exposure time', type=float, default=None)
@@ -118,8 +125,8 @@ examples:
     List ZDF files for object SS_For in filter r:
         fitscollectparquet -o SS_For -f r
 
-    List raw files for PI bzgirski, check existence:
-        fitscollectparquet -p bzgirski --raw --exclude-zdf -c
+    List raw files for PI mkopernik, check existence:
+        fitscollectparquet -p mkopernik --raw --exclude-zdf -c
 
     Filter by FWHM and airmass:
         fitscollectparquet -o SS_For --max-fwhm 3.0 --max-airmass 1.5
@@ -161,8 +168,8 @@ examples:
     log.info(f'FITS root: {fits_root}')
 
     # Determine which parquet files to load
-    if args.telescope:
-        parquet_files = [analytic_dir / f'{args.telescope}_report.parquet']
+    if args.telescope and not any('*' in t for t in args.telescope):
+        parquet_files = [analytic_dir / f'{t}_report.parquet' for t in args.telescope]
     else:
         parquet_files = sorted(analytic_dir.glob('*_report.parquet'))
 
@@ -172,15 +179,18 @@ examples:
 
     # Build pyarrow filters for predicate pushdown (applied at read time, reduces I/O and RAM)
     # Only simple equality/range filters can be pushed down; FWHM (derived column) cannot.
+    # For multi-value (OR) filters, pushdown uses 'in' operator.
     pa_filters = []
     if args.imagetyp:
         pa_filters.append(('IMAGETYP', '==', args.imagetyp))
+    if args.telescope:
+        pa_filters.append(('TELESCOP', 'in', args.telescope))
     if args.filter:
-        pa_filters.append(('FILTER', '==', args.filter))
-    if args.pi:
-        pa_filters.append(('PI', '==', args.pi))
-    if args.sciprog:
-        pa_filters.append(('SCIPROG', '==', args.sciprog))
+        pa_filters.append(('FILTER', 'in', args.filter))
+    if args.pi and not any('*' in p for p in args.pi):
+        pa_filters.append(('PI', 'in', args.pi))
+    if args.sciprog and not any('*' in p for p in args.sciprog):
+        pa_filters.append(('SCIPROG', 'in', args.sciprog))
     if args.min_exptime is not None:
         pa_filters.append(('EXPTIME', '>=', args.min_exptime))
     if args.max_exptime is not None:
@@ -215,14 +225,27 @@ examples:
 
     # Post-load filters: patterns (glob/regex) and derived columns (fwhm)
     if args.object:
-        df = df[df['OBJECT'].str.fullmatch(args.object.replace('*', '.*'), case=False, na=False)]
+        pattern = '|'.join(o.replace('*', '.*') for o in args.object)
+        df = df[df['OBJECT'].str.fullmatch(pattern, case=False, na=False)]
 
-    # pi/sciprog: only re-filter if they used wildcards (otherwise already pushed down)
-    if args.pi and '*' in args.pi:
-        df = df[df['PI'].str.fullmatch(args.pi.replace('*', '.*'), case=False, na=False)]
+    # telescope and filter: already pushed down unless wildcards used
+    if args.telescope and any('*' in t for t in args.telescope):
+        pattern = '|'.join(t.replace('*', '.*') for t in args.telescope)
+        df = df[df['TELESCOP'].str.fullmatch(pattern, case=False, na=False)]
 
-    if args.sciprog and '*' in args.sciprog:
-        df = df[df['SCIPROG'].str.fullmatch(args.sciprog.replace('*', '.*'), case=False, na=False)]
+    if args.filter and any('*' in f for f in args.filter):
+        pattern = '|'.join(f.replace('*', '.*') for f in args.filter)
+        df = df[df['FILTER'].str.fullmatch(pattern, case=False, na=False)]
+
+    if args.pi:
+        if any('*' in p for p in args.pi):
+            pattern = '|'.join(p.replace('*', '.*') for p in args.pi)
+            df = df[df['PI'].str.fullmatch(pattern, case=False, na=False)]
+
+    if args.sciprog:
+        if any('*' in p for p in args.sciprog):
+            pattern = '|'.join(p.replace('*', '.*') for p in args.sciprog)
+            df = df[df['SCIPROG'].str.fullmatch(pattern, case=False, na=False)]
 
     if args.min_fwhm is not None or args.max_fwhm is not None:
         df = df.copy()

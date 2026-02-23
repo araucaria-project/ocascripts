@@ -20,17 +20,13 @@ from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from typing import Optional
 
+from ocafitsfiles import detect_fits_root, canonical_path
+
 log = logging.getLogger('collectparquet')
 
 ANALYTIC_PROPOSITIONS = [
     Path('/work/vela/oca/analytic'),
 ]
-
-FITS_ROOT_PROPOSITIONS = {
-    'CAMK': Path('/work/vela/oca/fits'),
-    'OCM':  Path('/data/fits'),
-    'Mik':  Path('/Users/Shared/oca_data/fits'),
-}
 
 
 def detect_analytic_dir() -> Optional[Path]:
@@ -40,25 +36,14 @@ def detect_analytic_dir() -> Optional[Path]:
     return None
 
 
-def detect_fits_root() -> Optional[Path]:
-    for p in FITS_ROOT_PROPOSITIONS.values():
-        if p.is_dir():
-            return p
-    return None
-
-
 def zdf_path(fits_root: Path, row) -> str:
-    telescope = row['TELESCOP']
     basename = row['id']
-    night = basename[6:10]
-    return str(fits_root / telescope / 'processed-ofp' / 'science' / night / basename / f'{basename}_zdf.fits')
+    return str(canonical_path(basename, 'zdf', fits_root))
 
 
 def raw_path(fits_root: Path, row) -> str:
-    telescope = row['TELESCOP']
     basename = row['id']
-    night = basename[6:10]
-    return str(fits_root / telescope / 'raw' / night / f'{basename}.fits')
+    return str(canonical_path(basename, None, fits_root))
 
 
 def print_file(path: str, args: Namespace):
@@ -159,7 +144,9 @@ examples:
         log.error('Cannot find analytic dir. Use -A to specify.')
         return 1
 
-    fits_root = Path(args.dir) if args.dir else detect_fits_root()
+    fits_root = Path(args.dir) if args.dir else None
+    if fits_root is None:
+        _, fits_root = detect_fits_root()
     if not fits_root:
         log.error('Cannot find FITS root dir. Use -D to specify.')
         return 1

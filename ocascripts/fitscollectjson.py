@@ -11,80 +11,27 @@ v. 1.0.0
 import argparse
 import json
 import logging
-import re
 import signal
 import sys
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from typing import Optional, List, Dict, Any
 
+from ocafitsfiles import detect_fits_root, parse_metadata, canonical_path
+
 log = logging.getLogger('collectjson')
 
 
-def detect_root_schema():
-    """Detect FITS root directory schema (OCM, CAMK, or Mik)."""
-    root_propositions = {
-        'OCM': Path('/data/fits'),
-        'CAMK': Path('/work/vela/oca/fits'),
-        'Mik': Path('/Users/Shared/oca_data/fits')
-    }
 
-    for schema, path in root_propositions.items():
-        if path.is_dir():
-            return schema, path
-
-    return None, None
-
-
-def extract_metadata(name: str) -> Optional[Dict[str, str]]:
-    """Extract metadata from OCA FITS filename.
-
-    Examples:
-        zb08c_0571_24540.fits -> {telescope: zb08, instr: c, night: 0571, count: 24540}
-        zb08c_0571_24540_zdf.fits -> same + {suffix: zdf}
-        zb08c_0571_24540_master_z.fits -> same + {suffix: master_z}
-    """
-    m = re.match(r'(?P<telescope>\w{4})(?P<instr>.)_(?P<night>\d{4})_(?P<count>\d{5})(?:_(?P<suffix>.*))?\.fits', name)
-    if m:
-        return m.groupdict()
-    return None
-
-
-def reconstruct_path(name: str, root_path: Path) -> str:
-    """Reconstruct full path from filename based on naming convention.
-
-    Examples:
-        zb08c_0571_24540.fits -> /root/zb08/raw/0571/zb08c_0571_24540.fits
-        zb08c_0571_24540_zdf.fits -> /root/zb08/processed-ofp/science/0571/zb08c_0571_24540/zb08c_0571_24540_zdf.fits
-        zb08c_0571_24540_master_z.fits -> /root/zb08/processed-ofp/zeros/zb08c_0571_24540/zb08c_0571_24540_master_z.fits
-    """
-    metadata = extract_metadata(name)
-    if not metadata:
+def _reconstruct_path(name: str, root_path: Path) -> str:
+    """Reconstruct full path from filename using ocafitsfiles.canonical_path."""
+    meta = parse_metadata(name)
+    if not meta:
         return name
-
-    telescope = metadata['telescope']
-    night = metadata['night']
-    suffix = metadata.get('suffix', '')
-    basename = f"{metadata['telescope']}{metadata['instr']}_{metadata['night']}_{metadata['count']}"
-
-    if not suffix:
-        # Raw file
-        return str(root_path / telescope / 'raw' / night / name)
-    elif suffix == 'zdf':
-        # ZDF processed file
-        return str(root_path / telescope / 'processed-ofp' / 'science' / night / basename / name)
-    elif suffix.startswith('master_z'):
-        # Master zero
-        return str(root_path / telescope / 'processed-ofp' / 'zeros' / basename / name)
-    elif suffix.startswith('master_d'):
-        # Master dark
-        return str(root_path / telescope / 'processed-ofp' / 'darks' / basename / name)
-    elif suffix.startswith('master_f'):
-        # Master flat (has filter in suffix)
-        return str(root_path / telescope / 'processed-ofp' / 'flats' / name)
-    else:
-        # Unknown, return in science dir
-        return str(root_path / telescope / 'processed-ofp' / 'science' / night / basename / name)
+    basename = f"{meta['telescope']}{meta['instr']}_{meta['night']}_{meta['count']}"
+    suffix = meta.get('suffix') or None
+    p = canonical_path(basename, suffix, root_path)
+    return str(p) if p else name
 
 
 def parse_indented_list(lines: List[str], root_path: Optional[Path]) -> List[Dict[str, Any]]:
@@ -103,20 +50,17 @@ def parse_indented_list(lines: List[str], root_path: Optional[Path]) -> List[Dic
         if not line.strip():
             continue
 
-        # Count leading spaces
         indent = len(line) - len(line.lstrip(' '))
         file_path = line.strip()
 
-        # Reconstruct full path if needed
         if root_path and not file_path.startswith('/'):
-            full_path = reconstruct_path(Path(file_path).name, root_path)
+            full_path = _reconstruct_path(Path(file_path).name, root_path)
         else:
             full_path = file_path
 
         name = Path(file_path).name
 
         if indent == 0:
-            # New observation
             current_obs = {
                 'observation': Path(name).stem,
                 'name': name,
@@ -141,7 +85,7 @@ def parse_indented_list(lines: List[str], root_path: Optional[Path]) -> List[Dic
 
 def process_files(file_list: List[str], args: Namespace):
     """Process list of files and output as JSON."""
-    schema, root_path = detect_root_schema()
+    schema, root_path = detect_fits_root()
     if not schema and not args.dir:
         log.warning('Cannot detect FITS root directory, paths will not be reconstructed')
         root_path = None

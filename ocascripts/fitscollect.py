@@ -21,28 +21,10 @@ from argparse import ArgumentParser, Namespace
 from typing import Optional, Tuple
 import datetime
 
+from ocafitsfiles import detect_fits_root, ensure_oca_julian, canonical_path
 
 log = logging.getLogger('collect')
 
-def ocm_julian_date(date: datetime.date) -> int:
-    """
-    Calculate 4dig OCA Julian Date for a given date.
-    """
-    # ref date is 2023-02-23
-
-    return date.toordinal() - 738574 # 738574 is 2023-02-23
-
-def ensure_oca_julian(dt: Optional[str]) -> int:
-    try:
-        return int(dt)
-    except ValueError:
-        # iso -> date -> julian -> -2460000
-        try:
-            dt = ocm_julian_date(datetime.date.fromisoformat(dt))
-        except Exception:
-            log.error(f'Invalid date: {dt}')
-            raise ValueError(f'Invalid date: {dt}')
-    return int(dt)
 
 RET_T = Tuple[Optional[str], Optional[str], Optional[str]]
 RET_NULL = (None, None, None)
@@ -52,8 +34,6 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
     """Process a single observation and output files."""
     basename = path.stem
     try:
-        # Extract oca julian day string and telescope from path:
-        # e.g. "0671" and "jk15" from jk15c_0671_62637.json
         m = re.match(r'(?P<telescope>\w{4})(?P<instr>.)_(?P<night>\d{4})_(?P<count>\d{5}).json', path.name)
         night = m.group('night')
         telescope = m.group('telescope')
@@ -65,27 +45,16 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
     if int(night) < date_range[0] or int(night) > date_range[1]:
         return RET_NULL
 
-    # Add raw science files if requested
-    if args.raw:
-        fits_path = root_path / telescope / 'raw' / night / f'{basename}.fits'
-        if args.check and not fits_path.exists():
-            log.warning(f'File {fits_path} does not exist')
-        else:
-            if args.name:
-                print(fits_path.name)
-            else:
-                print(fits_path)
+    def emit(p: Path):
+        if args.check and not p.exists():
+            log.warning(f'File {p} does not exist')
+            return
+        print(p.name if args.name else p)
 
-    # Add ZDF (calibrated) science files unless excluded
+    if args.raw:
+        emit(canonical_path(basename, None, root_path))
     if not args.exclude_zdf:
-        fits_path = root_path / telescope / 'processed-ofp' / 'science' / night / basename / f'{basename}_zdf.fits'
-        if args.check and not fits_path.exists():
-            log.warning(f'File {fits_path} does not exist')
-        else:
-            if args.name:
-                print(fits_path.name)
-            else:
-                print(fits_path)
+        emit(canonical_path(basename, 'zdf', root_path))
 
     return telescope, night, instr
 
@@ -172,16 +141,11 @@ examples:
             log.error(f'Root FITS dir {root_path} not found')
             return -1
     else:
-        root_path = None
-        for s, p in root_propositions.items():
-            p = Path(p)
-            if p.is_dir():
-                log.info(f'Autodetect dir schema {s}, root FITS dir: {p}')
-                root_path = p
-                break
+        schema, root_path = detect_fits_root()
         if root_path is None:
             log.error('No root FITS dir found. Autodetect failed. Please specify root FITS dir with --dir argument.')
             return -1
+        log.info(f'Autodetect dir schema {schema}, root FITS dir: {root_path}')
 
     # dates: determine start_date, end_date in 4dig julian (OCA julian):
     # - if no date specified, use all dates

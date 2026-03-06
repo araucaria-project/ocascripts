@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ocascripts"
-version = "0.3.0"
+version = "1.0.0"
 description = ""
 authors = ["MMME team"]
 readme = "README.md"
@@ -27,6 +27,7 @@ fitscollectcalib = "ocascripts.fitscollectcalib:main"
 fitscollectjson = "ocascripts.fitscollectjson:main"
 fitscollectlist = "ocascripts.fitscollectlist:main"
 fitscollectparquet = "ocascripts.fitscollectparquet:main"
+fitscollectdownloader = "ocascripts.fitscollectdownloader:main"
 fitsheader = "ocascripts.fitsheader:main"
 fitslist = "ocascripts.fitslist:main"
 ocadb-downloader = "ocascripts.ocadb-downloader:main"

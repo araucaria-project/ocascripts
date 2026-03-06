@@ -61,6 +61,18 @@ examples:
 ```
 
 
+### fitscollectdownloader
+Generates a self-contained shell downloader script from a file list.
+Takes FITS filenames from stdin or arguments, requires OCADB username.
+
+```bash
+(.venv) ~/projects/astro/ocascripts
+fitscollect -n -o ngc300 | fitscollectdownloader -u mkopernik > download.sh
+fitscollectparquet -n --sciprog FT2025B-1 | fitscollectdownloader -u mkopernik > download.sh
+```
+
+The generated script handles authentication, token refresh, and downloads via presigned URLs.
+
 ### ocadb-downloader
 Allows for listing, downloading and showing corresponding OCADB information per FITS file.
 

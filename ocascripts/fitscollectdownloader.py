@@ -14,45 +14,10 @@ import logging
 import signal
 import sys
 from argparse import ArgumentParser
-from pathlib import Path
-from typing import Iterable, List
 
 from ocafitsfiles import render_download_script
 
 log = logging.getLogger("collectdownloader")
-
-
-def extract_filenames(lines: Iterable[str]) -> List[str]:
-    """Extract FITS filenames from plain list/table lines.
-
-    Rules:
-    - blank lines are ignored
-    - comment lines starting with '#' are ignored
-    - first column is taken (`|` table separator first, whitespace fallback)
-    - first column may be a path; only basename is kept
-    """
-    out: List[str] = []
-
-    for raw in lines:
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-
-        if "|" in line:
-            first = line.split("|", 1)[0].strip()
-        else:
-            parts = line.split(None, 1)
-            first = parts[0] if parts else ""
-
-        if not first:
-            continue
-
-        if first.upper() in {"PATH", "NAME", "FILENAME", "FILE"}:
-            continue
-
-        out.append(Path(first).name)
-
-    return out
 
 
 def main() -> int:
@@ -98,13 +63,11 @@ examples:
     else:
         logging.basicConfig(level=logging.WARNING, format=log_format)
 
-    source_lines = args.files if args.files else sys.stdin.readlines()
-    filenames = extract_filenames(source_lines)
+    if args.files:
+        data_block = "\n".join(args.files)
+    else:
+        data_block = sys.stdin.read()
 
-    if not filenames:
-        log.warning("No filenames found in input")
-
-    data_block = "\n".join(filenames)
     script = render_download_script(data_block, username=args.user)
     sys.stdout.write(script)
 

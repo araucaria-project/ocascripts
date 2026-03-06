@@ -68,7 +68,7 @@ Takes FITS filenames from stdin or arguments, requires OCADB username.
 ```bash
 (.venv) ~/projects/astro/ocascripts
 fitscollect -n -o ngc300 | fitscollectdownloader -u mkopernik > download.sh
-fitscollectparquet -n --sciprog FT2025B-1 | fitscollectdownloader -u mkopernik > download.sh
+fitscollectparquet -n --sciprog FT2000x | fitscollectdownloader -u mkopernik > download.sh
 ```
 
 The generated script handles authentication, token refresh, and downloads via presigned URLs.

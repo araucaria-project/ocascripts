@@ -137,3 +137,7 @@ dmypy.json
 
 # Poetry
 poetry.lock
+
+# Local scratch/untracked files moved from repository root
+local_root_untracked/
+

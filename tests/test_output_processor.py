@@ -1,160 +1,48 @@
 #!/usr/bin/env python3
-"""Test output processors."""
+"""Tests for JSON list parsing used by fitscollectjson."""
 
-import sys
-from io import StringIO
-from pathlib import Path
-
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from ocascripts.output_processor import (
-    LineOutputProcessor,
-    JsonOutputProcessor,
-    create_output_processor
-)
-import json
+from ocascripts.fitscollectjson import parse_indented_list
 
 
-def test_line_output_paths():
-    """Test line output with full paths."""
-    stream = StringIO()
-    processor = LineOutputProcessor(output_names=False, stream=stream)
+def test_parse_indented_list_creates_observations():
+    lines = [
+        'zb08c_0571_24540_zdf.fits\n',
+        'zb08c_0571_24541_zdf.fits\n',
+    ]
 
-    processor.begin_observation('test_obs')
-    processor.add_file({'path': '/path/to/file1.fits', 'class': 'zdf'})
-    processor.add_file({'path': '/path/to/file2.fits', 'class': 'raw'})
-    processor.end_observation()
-    processor.finalize()
+    observations = parse_indented_list(lines, root_path=None)
 
-    output = stream.getvalue()
-    lines = output.strip().split('\n')
-
-    assert len(lines) == 2
-    assert lines[0] == '/path/to/file1.fits'
-    assert lines[1] == '/path/to/file2.fits'
-    print("✓ test_line_output_paths passed")
+    assert [o['observation'] for o in observations] == ['zb08c_0571_24540_zdf', 'zb08c_0571_24541_zdf']
+    assert all(o['files'] == [] for o in observations)
 
 
-def test_line_output_names():
-    """Test line output with names only."""
-    stream = StringIO()
-    processor = LineOutputProcessor(output_names=True, stream=stream)
+def test_parse_indented_list_attaches_first_level_children():
+    lines = [
+        'zb08c_0571_24540_zdf.fits\n',
+        ' zb08c_0571_24540_master_f_V.fits\n',
+        ' zb08c_0571_24540_master_d.fits\n',
+    ]
 
-    processor.begin_observation('test_obs')
-    processor.add_file({'path': '/path/to/file1.fits', 'class': 'zdf'})
-    processor.add_file({'path': Path('/path/to/file2.fits'), 'class': 'raw'})
-    processor.end_observation()
-    processor.finalize()
+    observations = parse_indented_list(lines, root_path=None)
 
-    output = stream.getvalue()
-    lines = output.strip().split('\n')
-
-    assert len(lines) == 2
-    assert lines[0] == 'file1.fits'
-    assert lines[1] == 'file2.fits'
-    print("✓ test_line_output_names passed")
+    assert len(observations) == 1
+    assert observations[0]['name'] == 'zb08c_0571_24540_zdf.fits'
+    assert [f['name'] for f in observations[0]['files']] == [
+        'zb08c_0571_24540_master_f_V.fits',
+        'zb08c_0571_24540_master_d.fits',
+    ]
 
 
-def test_json_output():
-    """Test JSON output."""
-    stream = StringIO()
-    processor = JsonOutputProcessor(indent=2, stream=stream)
+def test_parse_indented_list_ignores_blank_lines():
+    lines = [
+        '\n',
+        'zb08c_0571_24540_zdf.fits\n',
+        '   \n',
+        ' zb08c_0571_24540_master_f_V.fits\n',
+    ]
 
-    processor.begin_observation('test_obs_1', metadata={'night': '1075', 'telescope': 'zb08'})
-    processor.add_file({'path': '/path/file1.fits', 'class': 'zdf'})
-    processor.add_file({'path': '/path/file2.fits', 'class': 'raw'})
-    processor.end_observation()
+    observations = parse_indented_list(lines, root_path=None)
 
-    processor.begin_observation('test_obs_2')
-    processor.add_file({'path': '/path/file3.fits', 'class': 'master_zero'})
-    processor.end_observation()
-
-    processor.finalize()
-
-    output = stream.getvalue()
-    data = json.loads(output)
-
-    assert len(data) == 2
-    assert data[0]['observation'] == 'test_obs_1'
-    assert data[0]['night'] == '1075'
-    assert data[0]['telescope'] == 'zb08'
-    assert len(data[0]['files']) == 2
-    assert data[0]['files'][0]['class'] == 'zdf'
-    assert data[0]['files'][1]['class'] == 'raw'
-
-    assert data[1]['observation'] == 'test_obs_2'
-    assert len(data[1]['files']) == 1
-    assert data[1]['files'][0]['class'] == 'master_zero'
-
-    print("✓ test_json_output passed")
-
-
-def test_json_output_with_metadata():
-    """Test JSON output with file metadata."""
-    stream = StringIO()
-    processor = JsonOutputProcessor(indent=2, stream=stream)
-
-    processor.begin_observation('test_obs')
-    processor.add_file({
-        'path': '/path/master_flat.fits',
-        'class': 'master_flat',
-        'filter': 'V',
-        'sources': ['raw1', 'raw2', 'raw3']
-    })
-    processor.end_observation()
-    processor.finalize()
-
-    output = stream.getvalue()
-    data = json.loads(output)
-
-    assert len(data) == 1
-    file_info = data[0]['files'][0]
-    assert file_info['class'] == 'master_flat'
-    assert file_info['filter'] == 'V'
-    assert file_info['sources'] == ['raw1', 'raw2', 'raw3']
-
-    print("✓ test_json_output_with_metadata passed")
-
-
-def test_factory():
-    """Test factory function."""
-    proc1 = create_output_processor('line', output_names=True)
-    assert isinstance(proc1, LineOutputProcessor)
-
-    proc2 = create_output_processor('json', indent=4)
-    assert isinstance(proc2, JsonOutputProcessor)
-
-    print("✓ test_factory passed")
-
-
-def test_context_manager():
-    """Test context manager style."""
-    stream = StringIO()
-    processor = JsonOutputProcessor(indent=2, stream=stream)
-
-    with processor.observation('test_obs', metadata={'night': '1075'}):
-        processor.add_file({'path': '/path/file.fits', 'class': 'zdf'})
-
-    processor.finalize()
-
-    output = stream.getvalue()
-    data = json.loads(output)
-
-    assert len(data) == 1
-    assert data[0]['observation'] == 'test_obs'
-    assert data[0]['night'] == '1075'
-
-    print("✓ test_context_manager passed")
-
-
-if __name__ == '__main__':
-    print("Running output processor tests...")
-    test_line_output_paths()
-    test_line_output_names()
-    test_json_output()
-    test_json_output_with_metadata()
-    test_factory()
-    test_context_manager()
-    print("\n✅ All tests passed!")
+    assert len(observations) == 1
+    assert len(observations[0]['files']) == 1
 

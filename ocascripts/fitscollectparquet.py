@@ -14,6 +14,7 @@ v. 1.0.0
 """
 import argparse
 import logging
+import re
 import signal
 import sys
 from pathlib import Path
@@ -27,6 +28,14 @@ log = logging.getLogger('collectparquet')
 ANALYTIC_PROPOSITIONS = [
     Path('/work/vela/oca/analytic'),
 ]
+
+
+def glob_patterns_to_fullmatch_regex(patterns: list[str]) -> str:
+    """Convert simple glob patterns to a safe OR-regex for str.fullmatch.
+
+    Only '*' acts as wildcard; all other regex metacharacters are escaped.
+    """
+    return '|'.join(re.escape(p).replace(r'\*', '.*') for p in patterns)
 
 
 def detect_analytic_dir() -> Optional[Path]:
@@ -212,26 +221,26 @@ examples:
 
     # Post-load filters: patterns (glob/regex) and derived columns (fwhm)
     if args.object:
-        pattern = '|'.join(o.replace('*', '.*') for o in args.object)
+        pattern = glob_patterns_to_fullmatch_regex(args.object)
         df = df[df['OBJECT'].str.fullmatch(pattern, case=False, na=False)]
 
     # telescope and filter: already pushed down unless wildcards used
     if args.telescope and any('*' in t for t in args.telescope):
-        pattern = '|'.join(t.replace('*', '.*') for t in args.telescope)
+        pattern = glob_patterns_to_fullmatch_regex(args.telescope)
         df = df[df['TELESCOP'].str.fullmatch(pattern, case=False, na=False)]
 
     if args.filter and any('*' in f for f in args.filter):
-        pattern = '|'.join(f.replace('*', '.*') for f in args.filter)
+        pattern = glob_patterns_to_fullmatch_regex(args.filter)
         df = df[df['FILTER'].str.fullmatch(pattern, case=False, na=False)]
 
     if args.pi:
         if any('*' in p for p in args.pi):
-            pattern = '|'.join(p.replace('*', '.*') for p in args.pi)
+            pattern = glob_patterns_to_fullmatch_regex(args.pi)
             df = df[df['PI'].str.fullmatch(pattern, case=False, na=False)]
 
     if args.sciprog:
         if any('*' in p for p in args.sciprog):
-            pattern = '|'.join(p.replace('*', '.*') for p in args.sciprog)
+            pattern = glob_patterns_to_fullmatch_regex(args.sciprog)
             df = df[df['SCIPROG'].str.fullmatch(pattern, case=False, na=False)]
 
     if args.min_fwhm is not None or args.max_fwhm is not None:

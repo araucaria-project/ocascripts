@@ -16,13 +16,15 @@ jobs:
         with:
           python-version: "3.11"
           cache: poetry
-          cache-dependency-path: poetry.lock
+          cache-dependency-path: |
+            poetry.lock
+            pyproject.toml
 
       - name: Install Poetry
         run: pipx install poetry
 
       - name: Install dependencies
-        run: poetry install --all-extras
+        run: poetry install --all-extras --no-interaction
 
       - name: Run tests
         run: poetry run pytest -q

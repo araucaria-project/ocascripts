@@ -21,7 +21,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Optional, Tuple
 import datetime
 
-from ocafitsfiles import detect_fits_root, ensure_oca_julian, canonical_path
+from ocafitsfiles import detect_fits_root, ensure_oca_julian, night_set, canonical_path
 
 log = logging.getLogger('collect')
 
@@ -30,7 +30,8 @@ RET_T = Tuple[Optional[str], Optional[str], Optional[str]]
 RET_NULL = (None, None, None)
 
 
-def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple[int, int]) -> RET_T:
+def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple[int, int],
+                 nights: set[int] | None = None) -> RET_T:
     """Process a single observation and output files."""
     basename = path.stem
     try:
@@ -43,6 +44,8 @@ def process_path(root_path: Path, path: Path, args: Namespace, date_range: Tuple
         return RET_NULL
 
     if int(night) < date_range[0] or int(night) > date_range[1]:
+        return RET_NULL
+    if nights is not None and int(night) not in nights:
         return RET_NULL
 
     def emit(p: Path):
@@ -78,6 +81,10 @@ def main() -> int:
     # May have form od ISO date or OCA Julian date
     filter_group.add_argument('-d', '--date', nargs='+',
                            help='UT night start date (single arg) or date range (two args), in ISO or OCA Julian date format')
+    filter_group.add_argument('-N', '--night', nargs='+', action='extend', metavar='NIGHT',
+                           help='OCA night numbers to include (repeatable: -N 1075 1082 or -N 1075 -N 1082). '
+                                'Accepts integers or ISO dates. '
+                                '("night" is a date of the beginning of observing night)')
 
     # Content selection group
     content_group = argparser.add_argument_group('content selection', 'Select which types of files to include')
@@ -182,9 +189,16 @@ examples:
             log.warning(f'Empty date range: {start_date} > {end_date}')
             return 0 # formally it's not forbidden, but still nothing to do
 
+    try:
+        nights = night_set(args.night)
+    except ValueError as e:
+        log.error(f'Invalid night argument: {e}')
+        return -1
+
     log.debug(f'Filtering:')
     log.debug(f'  Start date: {start_date}')
     log.debug(f'  End date: {end_date}')
+    log.debug(f'  Nights: {sorted(nights) if nights else "all"}')
     log.debug(f'  Telescope: {args.telescope}')
     log.debug(f'  Target: {args.object}')
     log.debug(f'  Filter: {args.filter}')
@@ -204,7 +218,8 @@ examples:
             root_path=root_path,
             path=path,
             args=args,
-            date_range=(start_date, end_date)
+            date_range=(start_date, end_date),
+            nights=nights,
         )
         if (telescope, night, instr) == RET_NULL:
             continue

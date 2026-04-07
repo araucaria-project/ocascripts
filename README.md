@@ -39,6 +39,9 @@ options:
                         Filter name
   -d DATE [DATE ...], --date DATE [DATE ...]
                         Date (single arg) or date range (two args), in ISO or OCA Julian date format
+  -N NIGHT [NIGHT ...], --night NIGHT [NIGHT ...]
+                        OCA night numbers to include (repeatable). Accepts integers or ISO dates.
+                        ("night" is a date of the beginning of observing night)
   -r, --raw             RAW files instead of calibrated ZDFs
   -n, --name            Print filenames only instead of abs paths
   -c, --check           Output file after checking if it exists
@@ -58,6 +61,10 @@ examples:
         
     Symlink all ZDF files from nights 2024-01-01 to 2024-01-31, taken in zb08 telescope, to /tmp/myfits:
         fitscollect -t zb08 -d 2024-01-01 2024-01-31 | xargs -I {} ln -s {} /tmp/myfits
+
+    Collect files from specific nights only:
+        fitscollect -t zb08 -N 1075 1082 1090
+        fitscollect -t zb08 -N 1075 -N 1082 -o ngc300-center
 ```
 
 

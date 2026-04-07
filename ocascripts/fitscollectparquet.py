@@ -21,7 +21,7 @@ from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from typing import Optional
 
-from ocafitsfiles import detect_fits_root, canonical_path
+from ocafitsfiles import detect_fits_root, canonical_path, night_set
 
 log = logging.getLogger('collectparquet')
 
@@ -85,6 +85,10 @@ def main() -> int:
                                help='DATE-OBS date range: one value (single night) or two (from-to), ISO date format '
                                     'YYYY-MM-DD. Time part is ignored - all observations from given UT date are included. '
                                     'E.g. -d 2025-12-09 or -d 2025-12-01 2025-12-31')
+    filter_group.add_argument('-N', '--night', nargs='+', action='extend', metavar='NIGHT',
+                               help='OCA night numbers to include (repeatable: -N 1075 1082 or -N 1075 -N 1082). '
+                                    'Accepts integers or ISO dates. Filters by night encoded in filename. '
+                                    '("night" is a date of the beginning of observing night)')
     filter_group.add_argument('--imagetyp',        help='IMAGETYP value (default: science)', default='science')
     filter_group.add_argument('--min-exptime',     help='Minimum exposure time', type=float, default=None)
     filter_group.add_argument('--max-exptime',     help='Maximum exposure time', type=float, default=None)
@@ -250,6 +254,14 @@ examples:
             df = df[df['_fwhm'] >= args.min_fwhm]
         if args.max_fwhm is not None:
             df = df[df['_fwhm'] <= args.max_fwhm]
+
+    try:
+        nights = night_set(args.night)
+    except ValueError as e:
+        log.error(f'Invalid night argument: {e}')
+        return 1
+    if nights is not None:
+        df = df[df['id'].map(lambda bid: int(bid.split('_')[1]) in nights)]
 
     log.info(f'Observations after all filters: {len(df)}')
 

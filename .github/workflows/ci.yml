@@ -11,6 +11,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Poetry
+        run: pipx install poetry
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -19,9 +22,6 @@ jobs:
           cache-dependency-path: |
             poetry.lock
             pyproject.toml
-
-      - name: Install Poetry
-        run: pipx install poetry
 
       - name: Install dependencies
         run: poetry install --all-extras --no-interaction

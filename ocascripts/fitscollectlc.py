@@ -19,6 +19,7 @@ from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from typing import Optional
 
+import pandas as pd
 from ocafitsfiles import detect_fits_root
 
 log = logging.getLogger('collectlc')
@@ -42,11 +43,6 @@ def glob_patterns_to_fullmatch_regex(patterns: list[str]) -> str:
 
 def objects_from_parquet(analytic_dir: Path, sciprog_patterns: list[str], telescope: str) -> list[str]:
     """Return unique lowercase object names matching the given SCIPROG patterns."""
-    try:
-        import pandas as pd
-    except ImportError:
-        log.error('pandas is required for --sciprog: pip install pandas pyarrow')
-        return []
 
     if '*' not in telescope:
         parquet_files = [analytic_dir / f'{telescope}_report.parquet']

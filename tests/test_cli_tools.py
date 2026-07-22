@@ -48,3 +48,13 @@ def test_fitscollectjson_help():
     assert result.returncode == 0
     assert 'json' in result.stdout.lower()
 
+
+def test_fitscollectlc_help():
+    result = subprocess.run(
+        ['python3', '-m', 'ocascripts.fitscollectlc', '--help'],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert 'light curve' in result.stdout.lower()
+

@@ -68,6 +68,65 @@ examples:
 ```
 
 
+### fitscollectlc
+Collects OCA light curve files per target and/or observation programme.
+Returns paths to `*_light_curve.txt` files for selected targets, telescopes and filters.
+
+```bash
+(.venv) ~/projects/astro/ocascripts
+fitscollectlc --help
+usage: fitscollectlc [-h] [-o TARGET] [-t TEL] [-f FILTER] [-P SCIPROG] [-n] [-A ANALYTIC_DIR] [-D DIR] [-v]
+
+Collects OCA light curve files per target and/or observation programme.
+
+Returns paths to *_light_curve.txt files for selected targets, telescopes and filters.
+
+Light curve files are located at:
+    {telescope}/processed-ofp/targets/{target}/{filter}/light-curve/*_light_curve.txt
+
+When --sciprog is used, the list of targets is derived from the parquet report files
+in the analytic directory (same as fitscollectparquet).
+
+filtering options:
+  -o TARGET, --object TARGET
+                        Target name (directory name under targets/)
+  -t TEL, --telescope TEL
+                        Telescope name
+  -f FILTER, --filter FILTER
+                        Filter name
+  -P SCIPROG, --sciprog SCIPROG
+                        Science programme name (glob-style, repeatable).
+                        Derives target list from parquet report files.
+
+output format:
+  -n, --name            Print filenames only instead of full paths
+
+general options:
+  -A ANALYTIC_DIR, --analytic-dir ANALYTIC_DIR
+                        Analytic dir with parquet files (default: autodetect)
+  -D DIR, --dir DIR     Root FITS dir (default: autodetect)
+  -v, --verbose
+
+examples:
+
+    All light curves for target ux_car:
+        fitscollectlc -o ux_car
+
+    Light curves in B filter for all targets on telescope wk06:
+        fitscollectlc -t wk06 -f B
+
+    All light curves for targets in a science programme:
+        fitscollectlc -P FT2025B-1
+
+    Light curves in V filter for targets in a science programme:
+        fitscollectlc -P FT2025B-1 -f V
+
+    Filenames only:
+        fitscollectlc -o ux_car -n
+```
+
+Requires `pandas` and `pyarrow` when using `--sciprog`.
+
 ### fitscollectdownloader
 Generates a self-contained shell downloader script from a file list.
 Takes FITS filenames from stdin or arguments, requires OCADB username.

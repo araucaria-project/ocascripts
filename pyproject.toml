@@ -27,6 +27,7 @@ pytest = "^8.3.5"
 
 [tool.poetry.scripts]
 fitscollect = "ocascripts.fitscollect:main"
+fitscollectlc = "ocascripts.fitscollectlc:main"
 fitscollectcalib = "ocascripts.fitscollectcalib:main"
 fitscollectjson = "ocascripts.fitscollectjson:main"
 fitscollectlist = "ocascripts.fitscollectlist:main"

@@ -127,6 +127,20 @@ examples:
 
 Requires `pandas` and `pyarrow` when using `--sciprog`.
 
+### fitscollectparquet
+
+Lists frames from the analytic parquet reports. Frames marked as test
+(`TEST=1` header card, e.g. the "Test" checkbox in TOI manual exposure) are
+skipped by default; frames with null/missing `TEST` are treated as non-test.
+
+```
+fitscollectparquet -o SS_For              # test frames skipped (default)
+fitscollectparquet -o SS_For -T           # include test frames (--include-test)
+fitscollectparquet -o SS_For --only-test  # only test frames
+```
+
+`-T` and `--only-test` are mutually exclusive.
+
 ### fitscollectdownloader
 Generates a self-contained shell downloader script from a file list.
 Takes FITS filenames from stdin or arguments, requires OCADB username.

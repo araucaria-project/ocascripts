@@ -96,6 +96,11 @@ def main() -> int:
     filter_group.add_argument('--max-airmass',     help='Maximum airmass', type=float, default=None)
     filter_group.add_argument('--min-fwhm',        help='Minimum FWHM (mean of x/y)', type=float, default=None)
     filter_group.add_argument('--max-fwhm',        help='Maximum FWHM (mean of x/y)', type=float, default=None)
+    test_group = filter_group.add_mutually_exclusive_group()
+    test_group.add_argument('-T', '--include-test', action='store_true',
+                            help='Include frames marked as test (TEST=1), excluded by default')
+    test_group.add_argument('--only-test', action='store_true',
+                            help='Output only frames marked as test (TEST=1)')
 
     # Content
     content_group = argparser.add_argument_group('content selection')
@@ -128,6 +133,12 @@ examples:
 
     Filter by FWHM and airmass:
         fitscollectparquet -o SS_For --max-fwhm 3.0 --max-airmass 1.5
+
+    Include frames marked as test (skipped by default):
+        fitscollectparquet -o SS_For -T
+
+    List only test frames:
+        fitscollectparquet -o SS_For --only-test
 
     Print with extra columns:
         fitscollectparquet -o SS_For --cols FILTER EXPTIME AIRMASS fwhm_x
@@ -254,6 +265,14 @@ examples:
             df = df[df['_fwhm'] >= args.min_fwhm]
         if args.max_fwhm is not None:
             df = df[df['_fwhm'] <= args.max_fwhm]
+
+    # Post-load, not pushdown: a pushed-down '!=' drops rows with null TEST,
+    # and older parquet files may lack the column entirely (no column = no test frames)
+    is_test = df['TEST'].fillna(0) == 1 if 'TEST' in df.columns else pd.Series(False, index=df.index)
+    if args.only_test:
+        df = df[is_test]
+    elif not args.include_test:
+        df = df[~is_test]
 
     try:
         nights = night_set(args.night)

@@ -128,18 +128,72 @@ examples:
 Requires `pandas` and `pyarrow` when using `--sciprog`.
 
 ### fitscollectparquet
+Lists FITS files (ZDF and/or raw) selected from the analytic parquet reports (`{tel}_report.parquet`).
 
-Lists frames from the analytic parquet reports. Frames marked as test
-(`TEST=1` header card, e.g. the "Test" checkbox in TOI manual exposure) are
-skipped by default; frames with null/missing `TEST` are treated as non-test.
-
+```bash
+fitscollectparquet [-o OBJECT] [-t TEL] [-f FILTER] [-p PI] [-P SCIPROG] [-d DATE [DATE ...]]
+                   [-N NIGHT [NIGHT ...]] [--imagetyp IMAGETYP] [--min-exptime S] [--max-exptime S]
+                   [--min-airmass X] [--max-airmass X] [--min-fwhm PX] [--max-fwhm PX]
+                   [-T | --only-test] [-Z] [-r] [-c] [-n] [--cols COL [COL ...]] [--values COL]
+                   [-A ANALYTIC_DIR] [-D DIR] [-v]
 ```
-fitscollectparquet -o SS_For              # test frames skipped (default)
-fitscollectparquet -o SS_For -T           # include test frames (--include-test)
-fitscollectparquet -o SS_For --only-test  # only test frames
+
+filtering options:
+
+| Option | Description |
+|---|---|
+| `-o`, `--object OBJECT` | Object name (`OBJECT` column, glob-style, repeatable: X OR Y) |
+| `-t`, `--telescope TEL` | Telescope name, repeatable |
+| `-f`, `--filter FILTER` | Filter name, repeatable |
+| `-p`, `--pi PI` | PI name (glob-style, repeatable) |
+| `-P`, `--sciprog SCIPROG` | Science programme (glob-style, repeatable) |
+| `-d`, `--date DATE [DATE]` | `DATE-OBS` UT date (`YYYY-MM-DD`): one value (single night) or two (from-to) |
+| `-N`, `--night NIGHT [...]` | OCA night numbers or ISO dates (repeatable); filters by night encoded in the filename |
+| `--imagetyp IMAGETYP` | `IMAGETYP` value (default: `science`) |
+| `--min-exptime`, `--max-exptime` | Exposure time range |
+| `--min-airmass`, `--max-airmass` | Airmass range |
+| `--min-fwhm`, `--max-fwhm` | FWHM range (mean of x/y) |
+| `-T`, `--include-test` | Include frames marked as test (`TEST=1`), which are **excluded by default** |
+| `--only-test` | Output only frames marked as test (`TEST=1`) |
+
+`-T` and `--only-test` are mutually exclusive. Frames with null or missing `TEST`
+are treated as non-test. The test filter is applied before `--values`.
+
+content selection:
+
+| Option | Description |
+|---|---|
+| `-Z`, `--exclude-zdf` | Exclude ZDF files |
+| `-r`, `--raw` | Include raw files |
+| `-c`, `--check` | Check that the file exists before outputting |
+
+output format:
+
+| Option | Description |
+|---|---|
+| `-n`, `--name` | Print filenames only, not full paths |
+| `--cols COL [...]` | Extra columns printed after the path (tab-separated) |
+| `--values COL` | Print unique values of a column (after filtering) instead of file paths |
+
+general options:
+
+| Option | Description |
+|---|---|
+| `-A`, `--analytic-dir` | Analytic dir with parquet files (default: autodetect) |
+| `-D`, `--dir` | Root FITS dir (default: autodetect) |
+| `-v`, `--verbose` | Verbose output |
+
+Examples:
+
+```bash
+fitscollectparquet -o SS_For -f r          # ZDF files, test frames skipped
+fitscollectparquet -o SS_For -T            # include test frames
+fitscollectparquet -o SS_For --only-test   # only test frames
+fitscollectparquet -o SS_For --max-fwhm 3.0 --max-airmass 1.5
+fitscollectparquet -o SS_For --cols FILTER EXPTIME AIRMASS fwhm_x
 ```
 
-`-T` and `--only-test` are mutually exclusive.
+Requires `pandas` and `pyarrow`.
 
 ### fitscollectdownloader
 Generates a self-contained shell downloader script from a file list.

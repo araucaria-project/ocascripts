@@ -19,7 +19,13 @@ import os
 from typing import List, Dict, Optional
 import sys
 
-from ocascripts import __version__
+from importlib.metadata import version, PackageNotFoundError
+
+# Standalone-friendly: script may be copied to ~/.local/bin without the package
+try:
+    __version__ = version('ocascripts')
+except PackageNotFoundError:
+    __version__ = 'unknown-not-installed'
 
 
 def open_file_data(file: str) -> Optional[str]:

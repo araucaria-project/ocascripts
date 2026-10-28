@@ -20,6 +20,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Optional
 
 from ocafitsfiles import detect_fits_root
+from ocascripts import __version__
 
 log = logging.getLogger('collectlc')
 
@@ -77,6 +78,7 @@ def objects_from_parquet(analytic_dir: Path, sciprog_patterns: list[str], telesc
 def main() -> int:
     argparser = ArgumentParser(description=__doc__,
                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     filter_group = argparser.add_argument_group('filtering options', 'Criteria for selecting light curve files')
     filter_group.add_argument('-o', '--object', help='Target name (directory name under targets/)', metavar='TARGET', default=None)

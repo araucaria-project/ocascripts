@@ -22,6 +22,7 @@ from typing import Optional, Tuple
 import datetime
 
 from ocafitsfiles import detect_fits_root, ensure_oca_julian, night_set, canonical_path
+from ocascripts import __version__
 
 log = logging.getLogger('collect')
 
@@ -71,6 +72,7 @@ def main() -> int:
     # command line arguments
     argparser = ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     # Filtering options group
     filter_group = argparser.add_argument_group('filtering options', 'Criteria for selecting FITS files')

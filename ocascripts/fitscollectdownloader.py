@@ -16,6 +16,7 @@ import sys
 from argparse import ArgumentParser
 
 from ocafitsfiles import render_download_script
+from ocascripts import __version__
 
 log = logging.getLogger("collectdownloader")
 
@@ -25,6 +26,7 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     argparser.add_argument(
         "files",

@@ -20,6 +20,7 @@ from argparse import ArgumentParser
 from typing import Optional, List, Dict, Tuple, Callable
 
 from ocafitsfiles import detect_fits_root, parse_filename, canonical_path
+from ocascripts import __version__
 
 PATH_COL = 103
 
@@ -259,6 +260,7 @@ def process_files(file_list: List[str], names_only: bool = False):
 def main() -> int:
     argparser = ArgumentParser(description=__doc__,
                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     argparser.add_argument('files', nargs='*', help='FITS files (reads from stdin if not provided)')
     argparser.add_argument('-n', '--names', help='Print filenames only, not full paths', action='store_true')

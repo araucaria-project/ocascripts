@@ -2,13 +2,14 @@
 """Smoke tests for CLI modules and stable helper behavior."""
 
 import subprocess
+import sys
 
 from ocascripts.fitscollectjson import parse_indented_list
 
 
 def test_fitscollect_help():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollect', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollect', '--help'],
         capture_output=True,
         text=True,
     )
@@ -31,7 +32,7 @@ def test_fitscollectjson_parse_indented_list_simple_tree():
 
 def test_fitscollectcalib_help():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollectcalib', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollectcalib', '--help'],
         capture_output=True,
         text=True,
     )
@@ -41,7 +42,7 @@ def test_fitscollectcalib_help():
 
 def test_fitscollectjson_help():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollectjson', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollectjson', '--help'],
         capture_output=True,
         text=True,
     )
@@ -51,7 +52,7 @@ def test_fitscollectjson_help():
 
 def test_fitscollectlc_help():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollectlc', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollectlc', '--help'],
         capture_output=True,
         text=True,
     )

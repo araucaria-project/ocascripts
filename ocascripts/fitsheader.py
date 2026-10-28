@@ -19,6 +19,14 @@ import os
 from typing import List, Dict, Optional
 import sys
 
+from importlib.metadata import version, PackageNotFoundError
+
+# Standalone-friendly: script may be copied to ~/.local/bin without the package
+try:
+    __version__ = version('ocascripts')
+except PackageNotFoundError:
+    __version__ = 'unknown-not-installed'
+
 
 def open_file_data(file: str) -> Optional[str]:
     for n in ['cp1252', 'utf8', 'cp850']:
@@ -106,6 +114,9 @@ def print_line(n, m):
 
 def main():
     ar = sys.argv
+    if len(ar) > 1 and ar[1] == '--version':
+        print(f'fitsheader {__version__}')
+        return
     path = os.getcwd()
     if len(ar) > 1:
         f = open_file_data(os.path.join(path, ar[1]))

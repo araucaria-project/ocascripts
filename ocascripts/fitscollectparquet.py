@@ -22,6 +22,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Optional
 
 from ocafitsfiles import detect_fits_root, canonical_path, night_set
+from ocascripts import __version__
 
 log = logging.getLogger('collectparquet')
 
@@ -60,14 +61,9 @@ def print_file(path: str, args: Namespace):
 
 
 def main() -> int:
-    try:
-        import pandas as pd
-    except ImportError:
-        log.error('pandas is required: pip install pandas pyarrow')
-        return 1
-
     argparser = ArgumentParser(description=__doc__,
                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     # Filtering
     filter_group = argparser.add_argument_group('filtering')
@@ -148,6 +144,12 @@ examples:
     """
 
     args = argparser.parse_args()
+
+    try:
+        import pandas as pd
+    except ImportError:
+        log.error('pandas is required: pip install pandas pyarrow')
+        return 1
 
     try:
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)

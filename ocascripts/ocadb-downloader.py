@@ -7,6 +7,7 @@ import ssl
 import json
 import argparse
 import requests
+from ocascripts import __version__
 
 class bcolors:
     HEADER = '\033[95m'
@@ -162,6 +163,7 @@ def main() -> int:
         prog='OCADB-Downloader',
         description='Downloads fits files from OCADB, based on STDIN input.',
         epilog='Saves the downloaded files to the current folder, lists all available FITS files, finds and displays info using FITS filename.')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     # parser.add_argument('username')  # positional argument
     parser.add_argument('-u', '--username', help='OCADB Username')

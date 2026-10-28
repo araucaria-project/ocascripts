@@ -18,6 +18,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Optional, List, Dict, Any
 
 from ocafitsfiles import detect_fits_root, parse_metadata, canonical_path
+from ocascripts import __version__
 
 log = logging.getLogger('collectjson')
 
@@ -103,6 +104,7 @@ def process_files(file_list: List[str], args: Namespace):
 def main() -> int:
     argparser = ArgumentParser(description=__doc__,
                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    argparser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
 
     # Input
     argparser.add_argument('files', nargs='*', help='FITS files (reads from stdin if not provided)')

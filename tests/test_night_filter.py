@@ -2,6 +2,7 @@
 """Tests for -N/--night filtering in fitscollect and fitscollectparquet."""
 
 import subprocess
+import sys
 from argparse import Namespace
 from pathlib import Path
 
@@ -140,7 +141,7 @@ def test_parquet_basename_night_extraction():
 
 def test_fitscollect_help_shows_night_option():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollect', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollect', '--help'],
         capture_output=True, text=True,
     )
     assert result.returncode == 0
@@ -151,7 +152,7 @@ def test_fitscollect_help_shows_night_option():
 @pytest.mark.skipif(not _has_pandas, reason='pandas not installed')
 def test_fitscollectparquet_help_shows_night_option():
     result = subprocess.run(
-        ['python3', '-m', 'ocascripts.fitscollectparquet', '--help'],
+        [sys.executable, '-m', 'ocascripts.fitscollectparquet', '--help'],
         capture_output=True, text=True,
     )
     assert result.returncode == 0

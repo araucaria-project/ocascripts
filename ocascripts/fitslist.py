@@ -17,6 +17,15 @@
 import os
 import re
 from typing import List, Dict, Tuple, Optional
+import sys
+
+from importlib.metadata import version, PackageNotFoundError
+
+# Standalone-friendly: script may be copied to ~/.local/bin without the package
+try:
+    __version__ = version('ocascripts')
+except PackageNotFoundError:
+    __version__ = 'unknown-not-installed'
 
 
 def open_file_data(file: str) -> Optional[str]:
@@ -94,6 +103,9 @@ def get_fits_list(path: str) -> List:
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == '--version':
+        print(f'fitslist {__version__}')
+        return
     path = os.getcwd()
     fd = {}
     s = ' '
